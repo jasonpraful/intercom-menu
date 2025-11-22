@@ -5,6 +5,7 @@ import { IntercomMenuDO } from './menu-do'
 import { IntercomMenuMCP } from './agent'
 import { getWeekRange, formatDate } from './helpers/date-utils'
 import { HomePage } from './views/home'
+import { NotFoundPage } from './views/not-found'
 
 const app = new Hono<{
   Bindings: Cloudflare.Env
@@ -35,6 +36,15 @@ const validateLocation = (location: string): location is Location => {
 
 app.get('/', (c) => {
   return c.html(HomePage())
+})
+
+app.notFound((c) => {
+  const accept = c.req.header('Accept') || ''
+  if (accept.includes('text/html')) {
+    c.status(404)
+    return c.html(NotFoundPage())
+  }
+  return c.json({ error: 'Not Found' }, 404)
 })
 
 /*
