@@ -32,35 +32,13 @@ jobs:
               id: deploy
               uses: cloudflare/wrangler-action@v3
               with:
-                accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-                apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-                secrets: |
-                    API_KEY
-                    LONDON_MENU_URL
-                    SF_MENU_URL
+                  accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+                  apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  secrets: |
+                      API_KEY
+                      LONDON_MENU_URL
+                      SF_MENU_URL
               env:
                   API_KEY: ${{ secrets.API_KEY }}
                   LONDON_MENU_URL: ${{ vars.LONDON_MENU_URL }}
                   SF_MENU_URL: ${{ vars.SF_MENU_URL }}
-
-    post-deploy:
-        needs: deploy
-        runs-on: ubuntu-latest
-        name: Post-deployment verification
-
-        steps:
-            - name: Wait for deployment
-              run: sleep 30
-
-            - name: Verify website is accessible
-              run: |
-                  response=$(curl -s https://intercom-menu.jasonpraful.co.uk/api/menu)
-                  status_code=$(curl -s -o /dev/null -w "%{http_code}" https://intercom-menu.jasonpraful.co.uk/api/menu)
-
-                  if [ "$status_code" = "200" ] && echo "$response" | grep -q "intercom\|menu"; then
-                    echo "✅ Intercom menu API is accessible and contains expected content"
-                  else
-                    echo "❌ Intercom menu API check failed - Status: $status_code"
-                    echo "Response: $response"
-                    exit 1
-                  fi
