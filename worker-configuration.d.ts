@@ -15,6 +15,7 @@ declare namespace Cloudflare {
 		COOKIE_ENCRYPTION_KEY: string;
 		LONDON_MENU_URL: string;
 		SF_MENU_URL: string;
+		API_KEY: string;
 		MCP_OBJECT: DurableObjectNamespace<import("./src/index").IntercomMenuMCP>;
 		INTERCOM_MENU: DurableObjectNamespace<import("./src/index").IntercomMenuDO>;
 		DUBLIN_MENU: R2Bucket;

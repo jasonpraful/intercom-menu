@@ -4,19 +4,41 @@ import { FetchMenuWorkflow } from './workflows/fetch-menu'
 import { IntercomMenuDO } from './menu-do'
 import { IntercomMenuMCP } from './agent'
 import { getWeekRange } from './helpers/date-utils'
+import { HomePage } from './views/home'
 
 const app = new Hono<{
   Bindings: Cloudflare.Env
 }>()
 
+const requireApiKey = async (c: any, next: any) => {
+  const apiKey = c.req.header('x-api-key') || c.req.query('api_key')
+
+  if (!c.env.API_KEY) {
+    c.status(500)
+    return c.json({ error: 'API_KEY not configured on server' })
+  }
+
+  if (!apiKey || apiKey !== c.env.API_KEY) {
+    c.status(401)
+    return c.json({ error: 'Unauthorized: Invalid or missing API key' })
+  }
+
+  await next()
+}
+
+app.get('/', (c) => {
+  return c.html(HomePage())
+})
+
 /*
  * Create a new workflow to fetch the menu
+ * Requires API key in x-api-key header or api_key query param
  * Returns the workflow id
  */
-app.get('/workflow', async (c) => {
-  const id = await c.env.FETCH_MENU_WORKFLOW.create()
+app.get('/workflow', requireApiKey, async (c) => {
+  const workflow = await c.env.FETCH_MENU_WORKFLOW.create()
   c.status(200)
-  return c.text(`Workflow created with id ${id}`)
+  return c.json(workflow)
 })
 
 /*
@@ -25,10 +47,19 @@ app.get('/workflow', async (c) => {
  */
 app.get('/workflow/:id', async (c) => {
   const id = c.req.param('id')
-  const workflow = await c.env.FETCH_MENU_WORKFLOW.get(id)
-  const status = await workflow.status()
-  c.status(200)
-  return c.json(status)
+  try {
+    const workflow = await c.env.FETCH_MENU_WORKFLOW.get(id)
+    const status = await workflow.status()
+    c.status(200)
+    return c.json(status)
+  } catch (error: any) {
+    if (error?.message?.includes('not_found') || error?.remote === true) {
+      c.status(404)
+      return c.json({ error: 'Workflow not found', id })
+    }
+    c.status(500)
+    return c.json({ error: 'Error fetching workflow status' })
+  }
 })
 
 // DO - Menu Endpoints
@@ -67,6 +98,11 @@ app.get('/menu/query/:location/:date', async (c) => {
   const id = c.env.INTERCOM_MENU.idFromName(weekRange.weekKey.replace('london', location))
   const stub = c.env.INTERCOM_MENU.get(id)
   const results = await stub.getMenuByDate(date, meal)
+
+  if (!results || results.length === 0) {
+    c.status(404)
+    return c.json({ error: 'No results found' })
+  }
 
   c.status(200)
   return c.json(results)
@@ -119,6 +155,11 @@ app.get('/menu/search/:location', async (c) => {
       dietaryLabel,
     })
 
+    if (!items || items.length === 0) {
+      c.status(404)
+      return c.json({ error: 'No items found' })
+    }
+
     c.status(200)
     return c.json({ items, count: items.length })
   } catch (error) {
@@ -140,6 +181,10 @@ app.get('/menu/:name', async (c) => {
     const id = c.env.INTERCOM_MENU.idFromName(name)
     const stub = c.env.INTERCOM_MENU.get(id)
     const data = await stub.getStoredData()
+    if (!data) {
+      c.status(404)
+      return c.json({ error: 'Menu not found' })
+    }
     c.status(200)
     return c.json(data)
   } catch (error) {

@@ -11,6 +11,15 @@
   "name": "intercom-london-menu",
   "main": "src/index.ts",
   "compatibility_date": "2025-03-10",
+  "routes": [
+    {
+      "pattern": "intercom-london-menu.jasonpraful.co.uk",
+      "custom_domain": true
+    }
+  ],
+  "assets": {
+    "directory": "public"
+  },
   "migrations": [
     {
       "new_sqlite_classes": ["IntercomMenuDO"],

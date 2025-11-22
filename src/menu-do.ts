@@ -1,5 +1,5 @@
 import { DurableObject } from 'cloudflare:workers'
-import { Menu, DayMenu, MenuItem } from './workflows/lib/types'
+import { Menu, DayMenu, MenuItem, MenuCategory } from './workflows/lib/types'
 import { mapDaysToDate } from './helpers/date-utils'
 
 export interface StoredMenuData {
