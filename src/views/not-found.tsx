@@ -30,7 +30,7 @@ export function NotFoundPage() {
                   alt="Intercom Logo" 
                   class="w-12 h-12 md:w-20 md:h-20 mt-2"
                 />
-                <h1 class="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-none">
+                <h1 class="text-3xl md:text-7xl font-black uppercase tracking-tighter leading-none">
                   404<br/>Not Found
                 </h1>
               </div>
