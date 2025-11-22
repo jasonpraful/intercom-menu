@@ -1,152 +1,157 @@
-# Model Context Protocol (MCP) Server + Access OAuth
+# Intercom Office Menu API
 
-This is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) server that supports remote MCP connections, with Access OAuth built-in.
+A Cloudflare Workers application that provides real-time access to weekly breakfast and lunch menus for Intercom offices in London, Dublin, and San Francisco.
 
-You can deploy it to your own Cloudflare account, and after you create your own Access for SaaS OIDC app, you'll have a fully functional remote MCP server that you can build off. Users will be able to connect to your MCP server by signing in with your connected Access Identity Provider.
+## Features
 
-The MCP server (powered by [Cloudflare Workers](https://developers.cloudflare.com/workers/)):
+- **Multi-location Support**: Serves menu data for London, Dublin, and SF offices
+- **Weekly Menu Management**: Stores and serves full week menus (Monday-Friday)
+- **Smart Search**: Search by item name, dietary requirements, or meal type
+- **Dietary Filters**: Find Vegan, Vegetarian, Gluten-Free, and Dairy-Free options
+- **Full Nutrition Data**: Complete nutritional information and allergen details
+- **REST API**: Traditional HTTP endpoints for web access
+- **MCP Integration**: AI-ready tools for conversational menu queries
+- **Interactive Explorer**: Built-in web UI for testing endpoints
 
-- Acts as OAuth _Server_ to your MCP clients
-- Acts as OAuth _Client_ to your _real_ OAuth server (in this case, Access)
+## Quick Start
 
-## Getting Started
+### Prerequisites
 
-Clone the repo & install dependencies: `npm install`
+- [Bun](https://bun.sh/) (recommended) or npm
+- Cloudflare account with Workers enabled
+- Wrangler CLI (`bun add -g wrangler`)
 
-### For Production
-
-Create a new [Access for SaaS OIDC App](https://developers.cloudflare.com/cloudflare-one/applications/configure-apps/saas-apps/generic-oidc-saas/):
-
-- For the Authorization callback URL, specify `https://mcp-access-oauth.<your-subdomain>.workers.dev/callback` and `http://localhost:8788/callback` if you are developing locally.
-- Note your Client ID and Client secret.
-- Set secrets via Wrangler
+### Installation
 
 ```bash
-wrangler secret put ACCESS_CLIENT_ID
-wrangler secret put ACCESS_CLIENT_SECRET
-wrangler secret put ACCESS_TOKEN_URL
-wrangler secret put ACCESS_AUTHORIZATION_URL
-wrangler secret put ACCESS_JWKS_URL
-wrangler secret put COOKIE_ENCRYPTION_KEY # add any random string here e.g. openssl rand -hex 32
+# Clone the repository
+git clone <repository-url>
+cd intercom-london-menu
+
+# Install dependencies with Bun (recommended)
+bun install
+
+# Or with npm
+npm install
 ```
 
-#### Set up a KV namespace
+### Local Development
 
-- Create the KV namespace:
-  `wrangler kv:namespace create "OAUTH_KV"`
-- Update the Wrangler file with the KV ID
+```bash
+# Create environment variables file
+cp .dev.vars.example .dev.vars
 
-#### Deploy & Test
+# Add your API key and menu URL
+echo "API_KEY=your-secure-api-key" >> .dev.vars
+echo "LONDON_MENU_URL=https://menu-source-url" >> .dev.vars
 
-Deploy the MCP server to make it available on your workers.dev domain
-` wrangler deploy`
-
-Test the remote server using [Inspector](https://modelcontextprotocol.io/docs/tools/inspector):
-
-```
-npx @modelcontextprotocol/inspector@latest
+# Start development server
+bun run dev
 ```
 
-Enter `https://mcp-access-oauth.<your-subdomain>.workers.dev/sse` and hit connect. Once you go through the authentication flow, you'll see the Tools working:
+The server will start at `http://localhost:8788`
 
-<img width="640" alt="image" src="https://github.com/user-attachments/assets/7973f392-0a9d-4712-b679-6dd23f824287" />
+### Deployment
 
-You now have a remote MCP server deployed!
+```bash
+# Deploy to Cloudflare Workers
+bun run deploy
 
-### Access Control
-
-This MCP server uses Access for authentication. All authenticated Access users can access basic tools like "add".
-
-The "generateImage" tool is restricted to specific Access users listed in the `ALLOWED_USERNAMES` configuration:
-
-```typescript
-// Add user emails for image generation access
-const ALLOWED_EMAILS = new Set(['employee1@mycompany.com', 'teammate1@mycompany.com'])
+# Or use wrangler directly
+wrangler deploy
 ```
 
-### Access the remote MCP server from Claude Desktop
+## API Documentation
 
-Open Claude Desktop and navigate to Settings -> Developer -> Edit Config. This opens the configuration file that controls which MCP servers Claude can access.
+The complete API documentation with interactive examples is available at the root endpoint:
 
-Replace the content with the following configuration. Once you restart Claude Desktop, a browser window will open showing your OAuth login page. Complete the authentication flow to grant Claude access to your MCP server. After you grant access, the tools will become available for you to use.
+```bash
+# Open in browser for interactive API explorer
+http://localhost:8788/
 
-```
-{
-  "mcpServers": {
-    "math": {
-      "command": "npx",
-      "args": [
-        "mcp-remote",
-        "https://mcp-access-oauth.<your-subdomain>.workers.dev/sse"
-      ]
-    }
-  }
-}
+# Or via curl to see available endpoints
+curl http://localhost:8788/
 ```
 
-Once the Tools (under 🔨) show up in the interface, you can ask Claude to use them. For example: "Could you use the math tool to add 23 and 19?". Claude should invoke the tool and show the result generated by the MCP server.
+### MCP Tools
 
-### For Local Development
+The application exposes 4 MCP tools for AI assistants:
 
-If you'd like to iterate and test your MCP server, you can do so in local development.
+1. **query-menu-by-date**: Get menu for specific date and location
+2. **search-menu-items**: Search with flexible filters
+3. **get-week-menu**: Get complete week data
+4. **find-items-by-dietary-label**: Quick dietary filtering
 
-- For the Homepage URL, specify `http://localhost:8788`
-- For the Authorization callback URL, specify `http://localhost:8788/callback`
-- Note your Client ID and generate a Client secret.
-- Create a `.dev.vars` file in your project root with:
+Connect to MCP at: `http://localhost:8788/mcp`
 
+## Environment Variables
+
+Create a `.dev.vars` file with:
+
+```bash
+# Required for workflow creation
+API_KEY=your-secure-api-key-here
+
+# Menu source URL
+LONDON_MENU_URL=https://menu-source.example.com
 ```
-ACCESS_CLIENT_ID=<your client id>
-ACCESS_CLIENT_SECRET=<your client secret>
-ACCESS_TOKEN_URL=<your Access for SaaS token url>
-ACCESS_AUTHORIZATION_URL=<your Access for SaaS authorization url>
-ACCESS_JWKS_URL=<your Access for SaaS JWKS url>
-COOKIE_ENCRYPTION_KEY=COOKIE_ENCRYPTION_KEY
+
+For production, set these in the Cloudflare dashboard under Workers > Settings > Variables.
+
+## Architecture
+
+```text
+┌─────────────┐     ┌──────────────┐     ┌────────────────┐
+│   Client    │────▶│  REST API    │────▶│ Durable Object │
+│             │     │  (Hono)      │     │  (Menu Store)  │
+└─────────────┘     └──────────────┘     └────────────────┘
+                            │
+                            ▼
+                    ┌──────────────┐
+                    │  MCP Server  │
+                    │  (AI Tools)  │
+                    └──────────────┘
+
+┌──────────────┐     ┌──────────────┐     ┌────────────────┐
+│   Workflow   │────▶│  Puppeteer   │────▶│  External Menu │
+│  (Scheduled) │     │  (Scraper)   │     │     Source     │
+└──────────────┘     └──────────────┘     └────────────────┘
 ```
 
-#### Develop & Test
+## Development
 
-Run the server locally to make it available at `http://localhost:8788`
-`wrangler dev`
+### Project Structure
 
-To test the local server, enter `http://localhost:8788/sse` into Inspector and hit connect. Once you follow the prompts, you'll be able to "List Tools".
+```text
+src/
+├── index.ts           # Main application with REST routes
+├── agent.ts           # MCP server implementation
+├── menu-do.ts         # Durable Object for menu storage
+├── workflows/
+│   ├── fetch-menu.ts  # Workflow to fetch menus
+│   └── lib/
+│       ├── types.ts   # TypeScript definitions
+│       └── london.ts  # Menu scraper implementation
+├── helpers/
+│   └── date-utils.ts  # Date and week utilities
+└── views/
+    └── home.tsx       # Interactive API explorer UI
+```
 
-#### Using Claude and other MCP Clients
+## How This Was Built
 
-When using Claude to connect to your remote MCP server, you may see some error messages. This is because Claude Desktop doesn't yet support remote MCP servers, so it sometimes gets confused. To verify whether the MCP server is connected, hover over the 🔨 icon in the bottom right corner of Claude's interface. You should see your tools available there.
+This project was developed with LLMs handling the heavy lifting throughout the entire development process. From implementing the MCP server and Durable Objects to writing REST APIs, performing code reviews, fixing bugs, and creating all documentation - AI was instrumental in building every aspect of this application.
 
-#### Using Cursor and other MCP Clients
+### Technology Stack
 
-To connect Cursor with your MCP server, choose `Type`: "Command" and in the `Command` field, combine the command and args fields into one (e.g. `npx mcp-remote https://<your-worker-name>.<your-subdomain>.workers.dev/sse`).
+This stack was chosen for its edge-first architecture, enabling fast global access with persistent storage and AI integration capabilities.
 
-Note that while Cursor supports HTTP+SSE servers, it doesn't support authentication, so you still need to use `mcp-remote` (and to use a STDIO server, not an HTTP one).
+- **Cloudflare Workers** - Serverless edge computing with Durable Objects
+- **Cloudflare Agents** - AI assistant integration and MCP server hosting
+- **Hono** - Lightweight routing framework
+- **TypeScript** - Type safety and developer experience
+- **Puppeteer** - Automated menu scraping
 
-You can connect your MCP server to other MCP clients like Windsurf by opening the client's configuration file, adding the same JSON that was used for the Claude setup, and restarting the MCP client.
+## Support
 
-## How does it work?
-
-#### OAuth Provider
-
-The OAuth Provider library serves as a complete OAuth 2.1 server implementation for Cloudflare Workers. It handles the complexities of the OAuth flow, including token issuance, validation, and management. In this project, it plays the dual role of:
-
-- Authenticating MCP clients that connect to your server
-- Managing the connection to Access's OAuth services
-- Securely storing tokens and authentication state in KV storage
-
-#### Durable MCP
-
-Durable MCP extends the base MCP functionality with Cloudflare's Durable Objects, providing:
-
-- Persistent state management for your MCP server
-- Secure storage of authentication context between requests
-- Access to authenticated user information via `this.props`
-- Support for conditional tool availability based on user identity
-
-#### MCP Remote
-
-The MCP Remote library enables your server to expose tools that can be invoked by MCP clients like the Inspector. It:
-
-- Defines the protocol for communication between clients and your server
-- Provides a structured way to define tools
-- Handles serialization and deserialization of requests and responses
-- Maintains the Server-Sent Events (SSE) connection between clients and your server
+For issues or questions, please open an issue in the repository.

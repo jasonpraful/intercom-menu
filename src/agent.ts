@@ -3,6 +3,11 @@ import { McpAgent } from 'agents/mcp'
 import { z } from 'zod'
 import { getWeekRange, getCurrentWeekRange, formatDate } from './helpers/date-utils'
 
+// Shared schema definitions
+const LOCATION_SCHEMA = z.enum(['london', 'dublin', 'sf'])
+const MEAL_TYPE_SCHEMA = z.enum(['breakfast', 'lunch'])
+const DIETARY_LABEL_SCHEMA = z.enum(['Vegan', 'Vegetarian', 'Gluten-Free', 'Dairy-Free'])
+
 export class IntercomMenuMCP extends McpAgent<Env, Record<string, never>, {}> {
   server = new McpServer({
     name: 'Intercom London Menu',
@@ -54,9 +59,9 @@ export class IntercomMenuMCP extends McpAgent<Env, Record<string, never>, {}> {
       'query-menu-by-date',
       {
         inputSchema: z.object({
-          location: z.enum(['london', 'dublin']).describe('Location to query'),
+          location: LOCATION_SCHEMA.describe('Location to query'),
           date: z.string().optional().describe('Date in YYYY-MM-DD format (defaults to today)'),
-          mealType: z.enum(['breakfast', 'lunch']).optional().describe('Meal type to filter by'),
+          mealType: MEAL_TYPE_SCHEMA.optional().describe('Meal type to filter by'),
         }),
         description:
           'Get menu for a specific date and location. Returns menu categories with all items including full nutrition and allergen details.',
@@ -84,11 +89,11 @@ export class IntercomMenuMCP extends McpAgent<Env, Record<string, never>, {}> {
       'search-menu-items',
       {
         inputSchema: z.object({
-          location: z.enum(['london', 'dublin']).describe('Location to search'),
+          location: LOCATION_SCHEMA.describe('Location to search'),
           query: z.string().optional().describe('Search term for item names'),
           startDate: z.string().optional().describe('Start date in YYYY-MM-DD format (defaults to current week Monday)'),
           endDate: z.string().optional().describe('End date in YYYY-MM-DD format (defaults to current week Friday)'),
-          mealType: z.enum(['breakfast', 'lunch']).optional().describe('Filter by meal type'),
+          mealType: MEAL_TYPE_SCHEMA.optional().describe('Filter by meal type'),
           dietaryLabel: z.string().optional().describe('Filter by dietary label (e.g., "Vegan", "Gluten-Free")'),
         }),
         description:
@@ -142,7 +147,7 @@ export class IntercomMenuMCP extends McpAgent<Env, Record<string, never>, {}> {
       'get-week-menu',
       {
         inputSchema: z.object({
-          location: z.enum(['london', 'dublin']).describe('Location to get menu for'),
+          location: LOCATION_SCHEMA.describe('Location to get menu for'),
           weekStartDate: z.string().optional().describe('Monday date in YYYY-MM-DD format (defaults to current week)'),
         }),
         description:
@@ -171,9 +176,9 @@ export class IntercomMenuMCP extends McpAgent<Env, Record<string, never>, {}> {
       'find-items-by-dietary-label',
       {
         inputSchema: z.object({
-          location: z.enum(['london', 'dublin']).describe('Location to search'),
-          dietaryLabel: z.enum(['Vegan', 'Vegetarian', 'Gluten-Free', 'Dairy-Free']).describe('Dietary label to filter by'),
-          mealType: z.enum(['breakfast', 'lunch']).optional().describe('Filter by meal type'),
+          location: LOCATION_SCHEMA.describe('Location to search'),
+          dietaryLabel: DIETARY_LABEL_SCHEMA.describe('Dietary label to filter by'),
+          mealType: MEAL_TYPE_SCHEMA.optional().describe('Filter by meal type'),
           date: z.string().optional().describe('Date in YYYY-MM-DD format (defaults to today)'),
         }),
         description:

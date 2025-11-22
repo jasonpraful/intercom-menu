@@ -1,16 +1,19 @@
-import { Hono } from 'hono'
+import { Hono, Context, Next } from 'hono'
 
 import { FetchMenuWorkflow } from './workflows/fetch-menu'
 import { IntercomMenuDO } from './menu-do'
 import { IntercomMenuMCP } from './agent'
-import { getWeekRange } from './helpers/date-utils'
+import { getWeekRange, formatDate } from './helpers/date-utils'
 import { HomePage } from './views/home'
 
 const app = new Hono<{
   Bindings: Cloudflare.Env
 }>()
 
-const requireApiKey = async (c: any, next: any) => {
+const ALLOWED_LOCATIONS = ['london', 'dublin', 'sf'] as const
+type Location = (typeof ALLOWED_LOCATIONS)[number]
+
+const requireApiKey = async (c: Context<{ Bindings: Cloudflare.Env }>, next: Next) => {
   const apiKey = c.req.header('x-api-key') || c.req.query('api_key')
 
   if (!c.env.API_KEY) {
@@ -24,6 +27,10 @@ const requireApiKey = async (c: any, next: any) => {
   }
 
   await next()
+}
+
+const validateLocation = (location: string): location is Location => {
+  return ALLOWED_LOCATIONS.includes(location.toLowerCase() as Location)
 }
 
 app.get('/', (c) => {
@@ -52,8 +59,11 @@ app.get('/workflow/:id', async (c) => {
     const status = await workflow.status()
     c.status(200)
     return c.json(status)
-  } catch (error: any) {
-    if (error?.message?.includes('not_found') || error?.remote === true) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorObj = error as { remote?: boolean }
+
+    if (errorMessage.includes('not_found') || errorObj.remote === true) {
       c.status(404)
       return c.json({ error: 'Workflow not found', id })
     }
@@ -83,9 +93,17 @@ app.get('/menu', async (c) => {
  * /menu/query/london/2025-11-25?meal=lunch
  */
 app.get('/menu/query/:location/:date', async (c) => {
-  const location = c.req.param('location')
+  const location = c.req.param('location').toLowerCase()
   const date = c.req.param('date')
   const { meal } = c.req.query() as { meal?: 'breakfast' | 'lunch' }
+
+  if (!validateLocation(location)) {
+    c.status(400)
+    return c.json({
+      error: 'Invalid location',
+      validLocations: ALLOWED_LOCATIONS,
+    })
+  }
   if (meal && meal !== 'breakfast' && meal !== 'lunch') {
     c.status(400)
     c.header('Content-Type', 'application/json')
@@ -117,12 +135,13 @@ app.get('/menu/query/:location/:date', async (c) => {
  * /menu/search/london?meal=lunch&startDate=2025-11-24&endDate=2025-11-28
  */
 app.get('/menu/search/:location', async (c) => {
-  const location = c.req.param('location')
+  const location = c.req.param('location').toLowerCase()
 
-  if (!location) {
+  if (!validateLocation(location)) {
     c.status(400)
     return c.json({
-      error: 'Location required',
+      error: 'Invalid location',
+      validLocations: ALLOWED_LOCATIONS,
       usage: '/menu/search/london?q=vegan&startDate=2025-11-24&endDate=2025-11-28',
     })
   }
@@ -134,7 +153,7 @@ app.get('/menu/search/:location', async (c) => {
     const mealType = c.req.query('meal') as 'breakfast' | 'lunch' | undefined
     const dietaryLabel = c.req.query('dietary') || undefined
 
-    const dateToQuery = startDate || '2025-11-25' // Use a date we know has data
+    const dateToQuery = startDate || formatDate(new Date()) // Use current date as default
     const weekRange = getWeekRange(dateToQuery)
     const id = c.env.INTERCOM_MENU.idFromName(weekRange.weekKey.replace('london', location))
     const stub = c.env.INTERCOM_MENU.get(id)

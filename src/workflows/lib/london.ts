@@ -121,7 +121,7 @@ async function extractModalDetails(page: Page, recipeId: string): Promise<ModalD
     const nutritionPer100g: ModalDetails['nutritionPer100g'] = {}
     const nutrientRows = modal.querySelectorAll('.k10-recipe-modal__nutrients-table tr[data-nutr-name]')
 
-    nutrientRows.forEach((row: PageElement) => {
+    nutrientRows.forEach((row) => {
       const nutrientName = row.getAttribute('data-nutr-name')
       const valueEl = row.querySelector('.k10-recipe-modal__td_val')
       const value = valueEl?.textContent?.trim()
@@ -177,21 +177,21 @@ async function extractMenuStructure(page: Page): Promise<DayMenu[]> {
     const days: DayMenu[] = []
     const dayElements = document.querySelectorAll('.k10-course.k10-course_level_1')
 
-    dayElements.forEach((dayEl: PageElement) => {
+    dayElements.forEach((dayEl) => {
       const dayName = dayEl.querySelector('.k10-course__name')?.textContent?.trim()
       if (!dayName) return
 
       const categories: MenuCategory[] = []
       const categoryElements = dayEl.querySelectorAll('.k10-course.k10-course_level_2')
 
-      categoryElements.forEach((catEl: PageElement) => {
+      categoryElements.forEach((catEl) => {
         const categoryName = catEl.querySelector('.k10-course__name')?.textContent?.trim()
         if (!categoryName) return
 
         const items: MenuItem[] = []
         const itemElements = catEl.querySelectorAll('.k10-recipe.k10-recipe_menu-item')
 
-        itemElements.forEach((itemEl: PageElement) => {
+        itemElements.forEach((itemEl) => {
           const modal = itemEl.querySelector('.k10-recipe-modal')
           const id = modal?.getAttribute('data-recipe-id') || ''
           const name = itemEl.querySelector('.k10-recipe__name')?.textContent?.trim() || ''
@@ -234,6 +234,7 @@ async function processMenu(page: Page, menuInfo: MenuInfo): Promise<Menu> {
   // Click to select this menu
   await page.evaluate((identifier) => {
     const menuOption = document.querySelector(`.k10-menu-selector__options-li[data-menu-identifier="${identifier}"]`)
+    //@ts-expect-error
     menuOption?.click()
   }, menuInfo.identifier)
 

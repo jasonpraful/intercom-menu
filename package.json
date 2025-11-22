@@ -5,6 +5,7 @@
   "scripts": {
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",
+    "destroy": "echo 'Warning: This will delete the worker and all associated data. Are you sure you want to continue?' && read -p 'Press Enter to continue' && wrangler delete",
     "start": "wrangler dev",
     "cf-typegen": "wrangler types",
     "type-check": "tsc --noEmit"

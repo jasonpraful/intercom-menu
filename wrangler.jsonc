@@ -8,28 +8,19 @@
  */
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "intercom-london-menu",
+  "name": "intercom-menu",
   "main": "src/index.ts",
   "compatibility_date": "2025-03-10",
   "routes": [
     {
-      "pattern": "intercom-london-menu.jasonpraful.co.uk",
+      "pattern": "intercom-menu.jasonpraful.co.uk",
       "custom_domain": true
     }
   ],
   "assets": {
     "directory": "public"
   },
-  "migrations": [
-    {
-      "new_sqlite_classes": ["IntercomMenuDO"],
-      "tag": "v1"
-    },
-    {
-      "new_sqlite_classes": ["IntercomMenuMCP"],
-      "tag": "v1"
-    }
-  ],
+
   "compatibility_flags": ["nodejs_compat"],
   "durable_objects": {
     "bindings": [
@@ -43,10 +34,16 @@
       }
     ]
   },
+  "migrations": [
+    {
+      "new_sqlite_classes": ["IntercomMenuDO", "IntercomMenuMCP"],
+      "tag": "v1"
+    }
+  ],
   "r2_buckets": [
     {
-      "binding": "DUBLIN_MENU",
-      "bucket_name": "intercmo-dublin-menu",
+      "binding": "DUBLIN_MENU", // Dublin does not have an API endpoint, so we use R2 to store images which will then be analyzed, parsed and stored as a structured reponse in the Durable Object.
+      "bucket_name": "intercom-dublin-menu",
       "jurisdiction": "eu"
     }
   ],
@@ -67,7 +64,9 @@
   "browser": {
     "binding": "BROWSER"
   },
-  "placement": { "mode": "smart" },
+  "placement": {
+    "mode": "smart"
+  },
   "dev": {
     "port": 8788
   }

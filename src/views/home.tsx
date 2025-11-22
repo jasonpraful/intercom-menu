@@ -43,7 +43,7 @@ const endpoints: EndpointConfig[] = [
     path: '/menu/query/:location/:date',
     description: 'Get menu items for a specific location and date.',
     params: [
-      { name: 'location', type: 'path', defaultValue: 'london' },
+      { name: 'location', type: 'path', defaultValue: 'london', placeholder: 'london, dublin, sf' },
       { name: 'date', type: 'path', defaultValue: new Date().toISOString().split('T')[0] },
       { name: 'meal', type: 'query', placeholder: 'lunch | breakfast' }
     ]
@@ -54,7 +54,7 @@ const endpoints: EndpointConfig[] = [
     path: '/menu/search/:location',
     description: 'Search for menu items with filters.',
     params: [
-      { name: 'location', type: 'path', defaultValue: 'london' },
+      { name: 'location', type: 'path', defaultValue: 'london', placeholder: 'london, dublin, sf' },
       { name: 'q', type: 'query', placeholder: 'Search term (e.g. vegan)' },
       { name: 'startDate', type: 'query', placeholder: 'YYYY-MM-DD' },
       { name: 'endDate', type: 'query', placeholder: 'YYYY-MM-DD' },
@@ -77,7 +77,7 @@ const endpoints: EndpointConfig[] = [
     path: '/menu/last-refresh/:location',
     description: 'Get the last refresh timestamp for a location.',
     params: [
-      { name: 'location', type: 'path', defaultValue: 'london' }
+      { name: 'location', type: 'path', defaultValue: 'london', placeholder: 'london, dublin, sf' }
     ]
   }
 ]
@@ -262,6 +262,11 @@ export function HomePage() {
                   Intercom<br/>Menu API
                 </h1>
               </div>
+              <div class="mb-8">
+                <p class="font-bold text-sm md:text-lg uppercase tracking-wide">
+                  A RESTful API to retrieve weekly food menu for Intercom
+                </p>
+              </div>
               <div class="flex flex-wrap gap-4 items-center">
                 <p class="text-xl font-bold bg-black text-white px-4 py-2 inline-block transform -rotate-1">
                   EXPLORER & TESTER
@@ -344,15 +349,15 @@ export function HomePage() {
             
             if (platform === 'claude') {
               iconContainer.innerHTML = \`<svg viewBox="0 0 26 26" class="w-12 h-12" fill="#D97757" xmlns="http://www.w3.org/2000/svg"><path d="\${CLAUDE_ICON_PATH}"/></svg>\`;
-              snippet.textContent = \`claude mcp add --transport http intercom-london-menu \${mcpUrl}\`;
+              snippet.textContent = \`claude mcp add --transport http intercom-menu \${mcpUrl}\`;
               instruction.textContent = "Run this command in your terminal";
               actionBtn.textContent = "Copy Command";
             } else if (platform === 'cursor') {
-              iconContainer.innerHTML = \`<img src="/assets/CURSOR.png" class="w-12 h-12 object-contain" alt="Cursor Logo" />\`;
+              iconContainer.innerHTML = \`<img src="/assets/cursor.png" class="w-12 h-12 object-contain" alt="Cursor Logo" />\`;
               
               const config = JSON.stringify({ url: mcpUrl });
               const encoded = btoa(config);
-              const cursorLink = \`https://cursor.com/en-US/install-mcp?name=intercom-london-menu&config=\${encoded}\`;
+              const cursorLink = \`https://cursor.com/en-US/install-mcp?name=intercom-menu&config=\${encoded}\`;
               
               snippet.textContent = cursorLink;
               instruction.textContent = "Open this link to install automatically";
@@ -363,7 +368,7 @@ export function HomePage() {
             } else {
               iconContainer.innerHTML = '<div class="text-4xl">📦</div>';
               const jsonConfig = JSON.stringify({
-                "intercom-london-menu": {
+                "intercom-menu": {
                   "url": mcpUrl
                 }
               }, null, 2);
