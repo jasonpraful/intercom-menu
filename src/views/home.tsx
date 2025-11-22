@@ -247,13 +247,13 @@ export function HomePage() {
         <meta property="og:type" content="website" />
         <meta property="og:title" content="Intercom Menu API" />
         <meta property="og:description" content="A RESTful API to retrieve weekly food menu for Intercom" />
-        <meta property="og:image" content="/assets/og.png" />
+        <meta property="og:image" content="https://intercom-menu.jasonpraful.co.uk/assets/og.png" />
 
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Intercom Menu API" />
         <meta name="twitter:description" content="A RESTful API to retrieve weekly food menu for Intercom" />
-        <meta name="twitter:image" content="/assets/og.png" />
+        <meta name="twitter:image" content="https://intercom-menu.jasonpraful.co.uk/assets/og.png" />
 
         <script src="https://cdn.tailwindcss.com"></script>
         <style

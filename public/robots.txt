@@ -1,9 +1,29 @@
+# Allow social media bots for preview generation
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+User-agent: Slackbot
+Allow: /
+
+User-agent: Slackbot-LinkExpanding
+Allow: /
+
+User-agent: Discordbot
+Allow: /
+
 # Block all web crawlers from indexing this site
 User-agent: *
 Disallow: /
 Crawl-delay: 86400
 
-# Specifically block major search engines
+
+# Specifically block major search engines (redundant with *, but for clarity)
 User-agent: Googlebot
 Disallow: /
 
@@ -22,16 +42,7 @@ Disallow: /
 User-agent: YandexBot
 Disallow: /
 
-User-agent: facebookexternalhit
-Disallow: /
-
-User-agent: Twitterbot
-Disallow: /
-
 User-agent: LinkedInBot
-Disallow: /
-
-User-agent: WhatsApp
 Disallow: /
 
 User-agent: Applebot
