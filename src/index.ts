@@ -227,7 +227,20 @@ app.get('/menu/:name', async (c) => {
 app.mount('/sse', IntercomMenuMCP.serveSSE('/sse').fetch, { replaceRequest: false })
 app.mount('/mcp', IntercomMenuMCP.serve('/mcp').fetch, { replaceRequest: false })
 
-export default app
+export default {
+  scheduled(_event: ScheduledEvent, env: Cloudflare.Env, ctx: ExecutionContext) {
+    console.log('Scheduled event triggered')
+    const delayedProcessing = async () => {
+      const workflow = await env.FETCH_MENU_WORKFLOW.create()
+      const status = await workflow.status()
+      console.log('Workflow status:', status)
+    }
+    ctx.waitUntil(delayedProcessing())
+  },
+  fetch(request: Request, env: Cloudflare.Env, ctx: ExecutionContext) {
+    return app.fetch(request, env, ctx)
+  },
+}
 
 export { FetchMenuWorkflow }
 export { IntercomMenuDO, IntercomMenuMCP }

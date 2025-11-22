@@ -11,6 +11,9 @@
   "name": "intercom-menu",
   "main": "src/index.ts",
   "compatibility_date": "2025-03-10",
+  "triggers": {
+    "crons": ["0 16 * * 0"]
+  },
   "routes": [
     {
       "pattern": "intercom-menu.jasonpraful.co.uk",
@@ -21,7 +24,7 @@
     "directory": "public"
   },
   "limits": {
-    "cpu_ms": 30000,
+    "cpu_ms": 30000
   },
   "compatibility_flags": ["nodejs_compat"],
   "durable_objects": {
