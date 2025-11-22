@@ -19,23 +19,21 @@ const endpoints: EndpointConfig[] = [
     method: 'GET',
     path: '/workflow',
     description: 'Trigger a new menu fetch workflow.',
-    params: [
-      { name: 'X-API-Key', type: 'header', placeholder: 'Your API Key' }
-    ]
+    params: [{ name: 'X-API-Key', type: 'header', placeholder: 'Your API Key' }],
   },
   {
     title: 'Workflow Status',
     method: 'GET',
     path: '/workflow/:id',
     description: 'Check the status of a specific workflow.',
-    params: [{ name: 'id', type: 'path', placeholder: 'e.g., 12345' }]
+    params: [{ name: 'id', type: 'path', placeholder: 'e.g., 12345' }],
   },
   {
     title: 'Menu Usage',
     method: 'GET',
     path: '/menu',
     description: 'Get usage examples and error info.',
-    params: []
+    params: [],
   },
   {
     title: 'Query Menu',
@@ -45,8 +43,8 @@ const endpoints: EndpointConfig[] = [
     params: [
       { name: 'location', type: 'path', defaultValue: 'london', placeholder: 'london, dublin, sf' },
       { name: 'date', type: 'path', defaultValue: new Date().toISOString().split('T')[0] },
-      { name: 'meal', type: 'query', placeholder: 'lunch | breakfast' }
-    ]
+      { name: 'meal', type: 'query', placeholder: 'lunch | breakfast' },
+    ],
   },
   {
     title: 'Search Menu',
@@ -59,27 +57,23 @@ const endpoints: EndpointConfig[] = [
       { name: 'startDate', type: 'query', placeholder: 'YYYY-MM-DD' },
       { name: 'endDate', type: 'query', placeholder: 'YYYY-MM-DD' },
       { name: 'meal', type: 'query', placeholder: 'lunch | breakfast' },
-      { name: 'dietary', type: 'query', placeholder: 'Dietary label' }
-    ]
+      { name: 'dietary', type: 'query', placeholder: 'Dietary label' },
+    ],
   },
   {
     title: 'Direct Menu Access',
     method: 'GET',
     path: '/menu/:name',
     description: 'Access the Durable Object directly by name.',
-    params: [
-      { name: 'name', type: 'path', placeholder: 'london-2025-11-25-...' }
-    ]
+    params: [{ name: 'name', type: 'path', placeholder: 'london-2025-11-25-...' }],
   },
   {
     title: 'Last Refresh',
     method: 'GET',
     path: '/menu/last-refresh/:location',
     description: 'Get the last refresh timestamp for a location.',
-    params: [
-      { name: 'location', type: 'path', defaultValue: 'london', placeholder: 'london, dublin, sf' }
-    ]
-  }
+    params: [{ name: 'location', type: 'path', defaultValue: 'london', placeholder: 'london, dublin, sf' }],
+  },
 ]
 
 function McpConfigSection() {
@@ -87,7 +81,7 @@ function McpConfigSection() {
     <section class="bg-white border-4 border-black p-6 neo-shadow mb-16">
       <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 border-b-4 border-black pb-4 gap-4">
         <h2 class="text-2xl font-black uppercase tracking-tight">Copy MCP Configuration</h2>
-        <select 
+        <select
           id="mcp-platform-select"
           onchange="updateMcpConfig()"
           class="bg-white border-2 border-black p-2 font-bold uppercase focus:bg-yellow-300 outline-none w-full md:w-auto"
@@ -97,21 +91,31 @@ function McpConfigSection() {
           <option value="others">Others (JSON)</option>
         </select>
       </div>
-      
+
       <div class="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-8 items-center">
-        <div id="mcp-icon-container" class="w-24 h-24 flex items-center justify-center border-4 border-black bg-white shrink-0 mx-auto md:mx-0">
-           {/* Icon inserted via JS */}
+        <div
+          id="mcp-icon-container"
+          class="w-24 h-24 flex items-center justify-center border-4 border-black bg-white shrink-0 mx-auto md:mx-0"
+        >
+          {/* Icon inserted via JS */}
         </div>
-        
+
         <div class="w-full">
           <div class="mb-4">
-            <p id="mcp-instruction" class="font-bold text-sm mb-2 text-gray-600 uppercase">Instruction</p>
-            <div id="mcp-snippet-container" class="bg-black text-white p-4 font-mono text-sm overflow-x-auto border-2 border-black relative min-h-[3.5rem] flex items-center">
-              <code id="mcp-snippet" class="whitespace-pre-wrap break-all">Loading...</code>
+            <p id="mcp-instruction" class="font-bold text-sm mb-2 text-gray-600 uppercase">
+              Instruction
+            </p>
+            <div
+              id="mcp-snippet-container"
+              class="bg-black text-white p-4 font-mono text-sm overflow-x-auto border-2 border-black relative min-h-[3.5rem] flex items-center"
+            >
+              <code id="mcp-snippet" class="whitespace-pre-wrap break-all">
+                Loading...
+              </code>
             </div>
           </div>
-          
-          <button 
+
+          <button
             id="mcp-action-btn"
             onclick="performMcpAction()"
             class="w-full md:w-auto px-8 py-3 bg-yellow-300 text-black font-black uppercase border-4 border-black hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all neo-shadow active:translate-x-[4px] active:translate-y-[4px] active:shadow-none"
@@ -149,11 +153,9 @@ function EndpointTester(props: EndpointConfig) {
             <div class="w-4 h-4 bg-black"></div>
             <h3 class="font-black text-lg uppercase underline decoration-4 underline-offset-4 decoration-black">Configuration</h3>
           </div>
-          
+
           <div class="space-y-4 bg-gray-50 p-4 border-2 border-black">
-            {props.params.length === 0 && (
-              <p class="text-gray-500 italic font-bold text-center py-4">No parameters required.</p>
-            )}
+            {props.params.length === 0 && <p class="text-gray-500 italic font-bold text-center py-4">No parameters required.</p>}
 
             {props.params.map((param) => {
               let badgeColor = 'bg-blue-500'
@@ -164,12 +166,10 @@ function EndpointTester(props: EndpointConfig) {
                 <div class="flex flex-col gap-1">
                   <label class="font-bold text-xs uppercase flex justify-between">
                     <span>{param.name}</span>
-                    <span class={`px-1 text-[10px] text-white ${badgeColor}`}>
-                      {param.type}
-                    </span>
+                    <span class={`px-1 text-[10px] text-white ${badgeColor}`}>{param.type}</span>
                   </label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     class="w-full border-2 border-black p-3 font-mono text-sm neo-input transition-all focus:bg-yellow-100"
                     data-param-name={param.name}
                     data-param-type={param.type}
@@ -181,7 +181,7 @@ function EndpointTester(props: EndpointConfig) {
             })}
           </div>
 
-          <button 
+          <button
             onclick={`executeRequest('${id}', '${props.method}', '${props.path}')`}
             class="w-full bg-black text-white font-black uppercase py-4 text-xl border-4 border-black hover:bg-yellow-400 hover:text-black hover:border-black transition-all neo-shadow mt-auto active:translate-x-[4px] active:translate-y-[4px] active:shadow-none"
           >
@@ -189,19 +189,19 @@ function EndpointTester(props: EndpointConfig) {
           </button>
 
           <div class="grid grid-cols-3 gap-2">
-            <button 
+            <button
               onclick={`copySnippet(this, '${id}', 'curl', '${props.method}', '${props.path}')`}
               class="bg-white text-black text-xs font-bold uppercase py-2 border-2 border-black hover:bg-gray-100 active:translate-y-[2px]"
             >
               Copy Curl
             </button>
-            <button 
+            <button
               onclick={`copySnippet(this, '${id}', 'node', '${props.method}', '${props.path}')`}
               class="bg-white text-black text-xs font-bold uppercase py-2 border-2 border-black hover:bg-gray-100 active:translate-y-[2px]"
             >
               Copy Node
             </button>
-            <button 
+            <button
               onclick={`copySnippet(this, '${id}', 'python', '${props.method}', '${props.path}')`}
               class="bg-white text-black text-xs font-bold uppercase py-2 border-2 border-black hover:bg-gray-100 active:translate-y-[2px]"
             >
@@ -234,9 +234,31 @@ export function HomePage() {
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Intercom London Menu API - Neobrutal Explorer</title>
+        <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex, nocache" />
+        <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+        <meta name="bingbot" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+
+        <title>Intercom Menu API</title>
+        <meta name="description" content="A RESTful API to retrieve weekly food menu for Intercom" />
+
+        <link rel="icon" type="image/png" href="/assets/favicon.png" />
+
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="Intercom Menu API" />
+        <meta property="og:description" content="A RESTful API to retrieve weekly food menu for Intercom" />
+        <meta property="og:image" content="/assets/og.png" />
+
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Intercom Menu API" />
+        <meta name="twitter:description" content="A RESTful API to retrieve weekly food menu for Intercom" />
+        <meta name="twitter:image" content="/assets/og.png" />
+
         <script src="https://cdn.tailwindcss.com"></script>
-        <style dangerouslySetInnerHTML={{ __html: `
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
           body { font-family: 'Courier New', Courier, monospace; background-image: radial-gradient(#000 1px, transparent 1px); background-size: 20px 20px; }
           .neo-shadow { box-shadow: 8px 8px 0px 0px rgba(0,0,0,1); }
           .neo-input:focus { outline: none; }
@@ -245,7 +267,9 @@ export function HomePage() {
           ::-webkit-scrollbar-track { background: #fff; border-left: 2px solid #000; }
           ::-webkit-scrollbar-thumb { background: #000; border: 2px solid #fff; }
           ::-webkit-scrollbar-thumb:hover { background: #333; }
-        `}} />
+        `,
+          }}
+        />
       </head>
       <body class="min-h-screen p-4 md:p-12 text-black selection:bg-yellow-300 selection:text-black">
         <div class="max-w-6xl mx-auto">
@@ -253,24 +277,22 @@ export function HomePage() {
             <div class="absolute -top-12 -right-12 w-40 h-40 bg-yellow-300 rounded-full border-4 border-black z-0"></div>
             <div class="relative z-10">
               <div class="flex flex-row items-start gap-4 md:gap-6 mb-4">
-                <img 
-                  src="https://storage-us-gcs.bfldr.com/78bxkjwcr4j9z9nfbmjf34n/v/1186671907/original/Intercom_Squinge_Black.png?Expires=1763922530&KeyName=gcs-bfldr-prod&Signature=LpCmXb_h-7iGdf_x6ptZeOu_YpE=" 
-                  alt="Intercom Logo" 
+                <img
+                  src="https://storage-us-gcs.bfldr.com/78bxkjwcr4j9z9nfbmjf34n/v/1186671907/original/Intercom_Squinge_Black.png?Expires=1763922530&KeyName=gcs-bfldr-prod&Signature=LpCmXb_h-7iGdf_x6ptZeOu_YpE="
+                  alt="Intercom Logo"
                   class="w-12 h-12 md:w-20 md:h-20 mt-2"
                 />
                 <h1 class="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-none">
-                  Intercom<br/>Menu API
+                  Intercom
+                  <br />
+                  Menu API
                 </h1>
               </div>
               <div class="mb-8">
-                <p class="font-bold text-sm md:text-lg uppercase tracking-wide">
-                  A RESTful API to retrieve weekly food menu for Intercom
-                </p>
+                <p class="font-bold text-sm md:text-lg uppercase tracking-wide">A RESTful API to retrieve weekly food menu for Intercom</p>
               </div>
               <div class="flex flex-wrap gap-4 items-center">
-                <p class="text-xl font-bold bg-black text-white px-4 py-2 inline-block transform -rotate-1">
-                  EXPLORER & TESTER
-                </p>
+                <p class="text-xl font-bold bg-black text-white px-4 py-2 inline-block transform -rotate-1">EXPLORER & TESTER</p>
                 <div class="h-1 bg-black flex-grow"></div>
                 <p class="font-bold text-sm">v1.0.0</p>
               </div>
@@ -284,10 +306,11 @@ export function HomePage() {
               <EndpointTester {...endpoint} />
             ))}
           </main>
-
         </div>
 
-        <script dangerouslySetInnerHTML={{ __html: `
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
           /**
            * Client-side logic for Intercom Menu API Explorer
            * Handles MCP configuration, request execution, and code snippet generation.
@@ -509,7 +532,9 @@ export function HomePage() {
 
           // Initialize on load
           document.addEventListener('DOMContentLoaded', updateMcpConfig);
-        `}} />
+        `,
+          }}
+        />
       </body>
     </html>
   )
