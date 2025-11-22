@@ -11,6 +11,7 @@
   "name": "intercom-menu",
   "main": "src/index.ts",
   "compatibility_date": "2025-03-10",
+  "preview_urls": true,
   "triggers": {
     "crons": ["0 16 * * 1"]
   },
