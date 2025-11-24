@@ -283,7 +283,7 @@ export function HomePage() {
               </a>
               <div class="flex flex-row items-start gap-4 md:gap-6 mb-4">
                 <img
-                  src="https://storage-us-gcs.bfldr.com/78bxkjwcr4j9z9nfbmjf34n/v/1186671907/original/Intercom_Squinge_Black.png?Expires=1763922530&KeyName=gcs-bfldr-prod&Signature=LpCmXb_h-7iGdf_x6ptZeOu_YpE="
+                  src="/assets/logo.jpg"
                   alt="Intercom Logo"
                   class="w-12 h-12 md:w-20 md:h-20 mt-2"
                 />
