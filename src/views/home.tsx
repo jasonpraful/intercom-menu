@@ -327,6 +327,36 @@ export function HomePage() {
           // --- Helper Functions ---
 
           /**
+           * Copies text to the user's clipboard with a fallback for older browsers.
+           */
+          async function copyToClipboard(text) {
+            if (navigator?.clipboard?.writeText) {
+              try {
+                await navigator.clipboard.writeText(text);
+                return true;
+              } catch (err) {
+                console.warn('navigator.clipboard.writeText failed, falling back to execCommand', err);
+              }
+            }
+
+            try {
+              const textarea = document.createElement('textarea');
+              textarea.value = text;
+              textarea.style.position = 'fixed';
+              textarea.style.opacity = '0';
+              textarea.setAttribute('readonly', 'readonly');
+              document.body.appendChild(textarea);
+              textarea.select();
+              const successful = document.execCommand('copy');
+              document.body.removeChild(textarea);
+              return successful;
+            } catch (err) {
+              console.error('document.execCommand("copy") failed', err);
+              return false;
+            }
+          }
+
+          /**
            * Collects input values from the endpoint configuration form.
            */
           function getRequestData(containerId, pathTemplate) {
@@ -420,7 +450,10 @@ export function HomePage() {
             } else {
               const text = document.getElementById('mcp-snippet').textContent;
               try {
-                await navigator.clipboard.writeText(text);
+                const copied = await copyToClipboard(text);
+                if (!copied) {
+                  throw new Error('Clipboard API not available');
+                }
                 const originalText = btn.textContent;
                 btn.textContent = 'COPIED!';
                 btn.classList.add('bg-yellow-300');
@@ -429,7 +462,7 @@ export function HomePage() {
                   btn.classList.remove('bg-yellow-300');
                 }, 2000);
               } catch (err) {
-                alert('Failed to copy: ' + err.message);
+                alert('Failed to copy: ' + err.message + '. Please copy manually.');
               }
             }
           }
@@ -472,7 +505,10 @@ export function HomePage() {
                   break;
               }
               
-              await navigator.clipboard.writeText(snippet);
+              const copied = await copyToClipboard(snippet);
+              if (!copied) {
+                throw new Error('Clipboard API not available');
+              }
               
               const originalText = btn.textContent;
               btn.textContent = 'COPIED!';
