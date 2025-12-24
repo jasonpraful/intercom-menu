@@ -135,7 +135,7 @@ export class IntercomMenuDO extends DurableObject<Env, Record<string, unknown>> 
         }
 
         this.sql.exec(
-          `INSERT INTO menu_index (date, day_name, meal_type, categories_count, items_count)
+          `INSERT OR REPLACE INTO menu_index (date, day_name, meal_type, categories_count, items_count)
            VALUES (?, ?, ?, ?, ?)`,
           date,
           day.day,
@@ -148,7 +148,7 @@ export class IntercomMenuDO extends DurableObject<Env, Record<string, unknown>> 
         if (itemsToInsert.length > 0) {
           for (const item of itemsToInsert) {
             this.sql.exec(
-              `INSERT INTO menu_items (id, date, meal_type, category, name, dietary_labels)
+              `INSERT OR REPLACE INTO menu_items (id, date, meal_type, category, name, dietary_labels)
                VALUES (?, ?, ?, ?, ?, ?)`,
               item.id,
               item.date,
