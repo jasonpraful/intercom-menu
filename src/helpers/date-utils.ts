@@ -111,3 +111,22 @@ export function getNextWeekRange(): WeekRange {
   nextMonday.setDate(nextMonday.getDate() + daysUntilNextMonday)
   return getWeekRange(nextMonday)
 }
+
+/**
+ * Get the appropriate week range for menu fetching
+ * - Saturday: Returns next week's range (we're past the menu week, prepare for upcoming week)
+ * - Sunday-Friday: Returns current week's range (we're in or before the current menu week)
+ * This handles both scheduled runs (Monday) and manual refreshes during the week
+ */
+export function getMenuWeekRange(): WeekRange {
+  const today = new Date()
+  const dayOfWeek = today.getDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  
+  // Saturday (6) → use next week
+  // Sunday (0) through Friday (5) → use current week
+  if (dayOfWeek === 6) {
+    return getNextWeekRange()
+  } else {
+    return getCurrentWeekRange()
+  }
+}
