@@ -4,8 +4,8 @@
 
 export interface WeekRange {
   startDate: string // YYYY-MM-DD (Monday)
-  endDate: string   // YYYY-MM-DD (Friday)
-  weekKey: string   // london-YYYY-MM-DD-YYYY-MM-DD
+  endDate: string // YYYY-MM-DD (Friday)
+  weekKey: string // london-YYYY-MM-DD-YYYY-MM-DD
 }
 
 export interface DayToDateMap extends Record<string, string> {
@@ -17,13 +17,16 @@ export interface DayToDateMap extends Record<string, string> {
 }
 
 /**
- * Get the Monday of the week containing the given date
+ * Get the Monday of the week containing the given date.
  */
 export function getWeekMonday(date: Date): Date {
   const d = new Date(date)
   const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1) // adjust when day is sunday
-  return new Date(d.setDate(diff))
+  // Sunday (0) → next day is Monday (+1)
+  // Monday (1) → same day (0)
+  // Tue-Sat (2-6) → go back to Monday
+  const diff = day === 0 ? 1 : 1 - day
+  return new Date(d.setDate(d.getDate() + diff))
 }
 
 /**
@@ -41,7 +44,7 @@ export function getWeekRange(date: Date | string): WeekRange {
   return {
     startDate,
     endDate,
-    weekKey: `london-${startDate}-${endDate}`
+    weekKey: `london-${startDate}-${endDate}`,
   }
 }
 
@@ -74,7 +77,7 @@ export function mapDaysToDate(weekMondayDate: Date | string): DayToDateMap {
     Tuesday: formatDate(new Date(monday.getTime() + 24 * 60 * 60 * 1000)),
     Wednesday: formatDate(new Date(monday.getTime() + 2 * 24 * 60 * 60 * 1000)),
     Thursday: formatDate(new Date(monday.getTime() + 3 * 24 * 60 * 60 * 1000)),
-    Friday: formatDate(new Date(monday.getTime() + 4 * 24 * 60 * 60 * 1000))
+    Friday: formatDate(new Date(monday.getTime() + 4 * 24 * 60 * 60 * 1000)),
   }
 }
 
@@ -113,20 +116,11 @@ export function getNextWeekRange(): WeekRange {
 }
 
 /**
- * Get the appropriate week range for menu fetching
- * - Saturday: Returns next week's range (we're past the menu week, prepare for upcoming week)
- * - Sunday-Friday: Returns current week's range (we're in or before the current menu week)
- * This handles both scheduled runs (Monday) and manual refreshes during the week
+ * Get the appropriate week range for menu fetching.
+ * Saturday returns next week since Mon-Fri has passed.
+ * Sunday-Friday returns current week.
  */
 export function getMenuWeekRange(): WeekRange {
-  const today = new Date()
-  const dayOfWeek = today.getDay() // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-  
-  // Saturday (6) → use next week
-  // Sunday (0) through Friday (5) → use current week
-  if (dayOfWeek === 6) {
-    return getNextWeekRange()
-  } else {
-    return getCurrentWeekRange()
-  }
+  const isSaturday = new Date().getDay() === 6
+  return isSaturday ? getNextWeekRange() : getCurrentWeekRange()
 }

@@ -111,13 +111,49 @@ LONDON_MENU_URL=https://...  # Menu source URL
 
 ## Date Handling
 
-- Week ranges: Always Monday-Friday
+### Overview
+
+- Week ranges: Always Monday-Friday (menus only cover weekdays)
 - Date format: YYYY-MM-DD
-- Current week detection: Automatic
-- Helper utilities in `src/helpers/date-utils.ts`:
-  - `getWeekRange(date)` - Get week for any date
-  - `getCurrentWeekRange()` - Current week
-  - `formatDate(date)` - Convert to YYYY-MM-DD
+- Week keys: `london-YYYY-MM-DD-YYYY-MM-DD` (monday-friday)
+
+### Key Functions in `src/helpers/date-utils.ts`
+
+| Function | Purpose |
+|----------|---------|
+| `getWeekRange(date)` | Get Monday-Friday range for any date |
+| `getCurrentWeekRange()` | Get the calendar week containing today |
+| `getNextWeekRange()` | Get the upcoming Monday-Friday |
+| `getMenuWeekRange()` | **Smart function for menu fetching** (see below) |
+| `formatDate(date)` | Convert Date to YYYY-MM-DD string |
+| `parseDate(str)` | Convert YYYY-MM-DD string to Date |
+| `mapDaysToDate(monday)` | Get date strings for Mon-Fri |
+
+### getMenuWeekRange() - Important Logic
+
+This function determines which week to fetch/store menu data for:
+
+- **Sunday-Friday**: Returns current week
+- **Saturday**: Returns next week (current menu week Mon-Fri has passed)
+
+```text
+Day of Week | getMenuWeekRange() returns
+------------|---------------------------
+Sun-Fri     | Current week (Mon-Fri containing today)
+Saturday    | Next week (upcoming Mon-Fri)
+```
+
+### Week Convention (US Style)
+
+This codebase uses US week convention where **Sunday is the start of a new week**:
+
+- `getWeekMonday(Sunday)` → Returns the **next** Monday (upcoming week)
+- `getWeekMonday(Mon-Sat)` → Returns the Monday of that week
+
+### Common Pitfalls
+
+1. **JavaScript's getDay()**: Sunday = 0, Monday = 1, ..., Saturday = 6
+2. **Timezone issues**: Dates are local - be aware of timezone when testing
 
 ## Development
 
@@ -139,6 +175,22 @@ bun run dev  # Start local server on :8788
 ```bash
 bun run type-check
 ```
+
+### Testing
+
+```bash
+bun test              # Run all tests
+bun test --watch      # Watch mode
+```
+
+Tests are written using Bun's built-in test runner (`bun:test`). Test files use the `.test.ts` extension.
+
+**Testing Guidelines:**
+
+- Keep tests simple and focused - test one thing per test
+- Avoid verbose comments explaining "bugs" or "fixes" - future readers won't have that context
+- Group related tests with `describe()` blocks
+- Use descriptive test names that explain what's being tested
 
 ### Deployment
 
@@ -267,32 +319,7 @@ src/
 │       ├── types.ts   # TypeScript definitions
 │       └── london.ts  # London menu scraper
 ├── helpers/
-│   ├── date-utils.ts  # Date/week utilities
-│   └── get-weekday.ts # Additional date helpers
+│   └── date-utils.ts  # Date/week utilities
 └── views/
     └── home.tsx       # Interactive API explorer UI
 ```
-
-## Recent Updates (Nov 2024)
-
-### MCP v2.0.0 Revamp
-
-- Replaced 2 basic tools with 4 comprehensive tools
-- Added full search and filtering capabilities
-- Included nutrition and allergen data in responses
-- Improved error messages with helpful context
-- Smart date defaulting (current week/today)
-
-### API Enhancements
-
-- Added API key protection for workflow creation
-- Improved error responses (404 vs 500)
-- Interactive API explorer with Tailwind UI
-- Support for header-based API keys
-
-### Code Quality
-
-- Full TypeScript support
-- Hono framework for cleaner routing
-- SQL indexing for fast queries
-- Proper error boundaries
