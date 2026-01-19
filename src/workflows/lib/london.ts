@@ -28,6 +28,13 @@ const DIETARY_LABEL_MAP: Record<string, string> = {
 // Helper Functions
 // ============================================================================
 
+function getMenuType(menuName: string): 'breakfast' | 'lunch' | 'dinner' {
+  const name = menuName.toLowerCase()
+  if (name.includes('breakfast')) return 'breakfast'
+  if (name.includes('dinner')) return 'dinner'
+  return 'lunch'
+}
+
 async function closeModal(page: Page): Promise<void> {
   const closeButton = await page.$('.k10-recipe-modal.show .close')
   if (closeButton) {
@@ -153,22 +160,27 @@ async function extractModalDetails(page: Page, recipeId: string): Promise<ModalD
   }, recipeId)
 }
 
-async function extractMenuStructure(page: Page): Promise<DayMenu[]> {
-  const allDays = await page.evaluate((labelMap) => {
+async function extractMenuStructure(page: Page, menuIdentifier: string): Promise<DayMenu[]> {
+  const allDays = await page.evaluate((labelMap: Record<string, string>, identifier: string) => {
     function mapLabels(labelIds: string): string[] {
       if (!labelIds || labelIds.trim() === '') return []
       return labelIds
         .split(',')
         .map((id) => labelMap[id.trim()])
-        .filter((label) => !!label)
+        .filter(Boolean)
     }
 
-    const days: DayMenu[] = []
-    const dayElements = document.querySelectorAll('.k10-course.k10-course_level_1')
+    const allDayElements = document.querySelectorAll('.k10-course.k10-course_level_1')
+    const dayElements = Array.from(allDayElements).filter((el) => {
+      const parent = el.closest('[data-menu-identifier]')
+      return parent?.getAttribute('data-menu-identifier') === identifier
+    })
 
-    dayElements.forEach((dayEl) => {
+    const days: DayMenu[] = []
+
+    for (const dayEl of dayElements) {
       const dayName = dayEl.querySelector('.k10-course__name')?.textContent?.trim()
-      if (!dayName) return
+      if (!dayName) continue
 
       const categories: MenuCategory[] = []
       const categoryElements = dayEl.querySelectorAll('.k10-course.k10-course_level_2')
@@ -182,14 +194,10 @@ async function extractMenuStructure(page: Page): Promise<DayMenu[]> {
 
         itemElements.forEach((itemEl) => {
           const modal = itemEl.querySelector('.k10-recipe-modal')
-          const id = modal?.getAttribute('data-recipe-id') || ''
-          const name = itemEl.querySelector('.k10-recipe__name')?.textContent?.trim() || ''
-          const labels = itemEl.getAttribute('data-labels') || ''
-
           items.push({
-            id,
-            name,
-            dietaryLabels: mapLabels(labels),
+            id: modal?.getAttribute('data-recipe-id') || '',
+            name: itemEl.querySelector('.k10-recipe__name')?.textContent?.trim() || '',
+            dietaryLabels: mapLabels(itemEl.getAttribute('data-labels') || ''),
           })
         })
 
@@ -201,69 +209,52 @@ async function extractMenuStructure(page: Page): Promise<DayMenu[]> {
       if (categories.length > 0) {
         days.push({ day: dayName, categories })
       }
-    })
+    }
 
     return days
-  }, DIETARY_LABEL_MAP)
+  }, DIETARY_LABEL_MAP, menuIdentifier)
 
   // Deduplicate days by name (HTML may have duplicate sections)
-  const uniqueDaysMap = new Map<string, DayMenu>()
-  for (const day of allDays) {
-    if (!uniqueDaysMap.has(day.day)) {
-      uniqueDaysMap.set(day.day, day)
-    }
-  }
-
-  return Array.from(uniqueDaysMap.values())
+  const seenDays = new Set<string>()
+  return allDays.filter((day) => {
+    if (seenDays.has(day.day)) return false
+    seenDays.add(day.day)
+    return true
+  })
 }
 
-async function processMenu(page: Page, menuInfo: MenuInfo): Promise<Menu> {
+async function processMenu(page: Page, menuInfo: MenuInfo, menuUrl: string): Promise<Menu> {
   console.log(`Processing menu: ${menuInfo.name}`)
 
-  // Click to select this menu
+  // Navigate fresh for each menu to ensure clean state
+  await page.goto(menuUrl, { waitUntil: 'networkidle0' })
+
+  // Click to select this specific menu
   await page.evaluate((identifier) => {
     const menuOption = document.querySelector(`.k10-menu-selector__options-li[data-menu-identifier="${identifier}"]`)
-    //@ts-expect-error
-    menuOption?.click()
+    if (menuOption) {
+      (menuOption as HTMLElement).click()
+    }
   }, menuInfo.identifier)
 
-  await new Promise((resolve) => setTimeout(resolve, 2000))
+  // Wait for the menu content to load - the site uses AJAX to load menu content
+  await new Promise((resolve) => setTimeout(resolve, 3000))
 
-  // Extract menu structure (already deduplicated)
-  const uniqueDays = await extractMenuStructure(page)
+  // Extract menu structure (filtered by menu identifier, already deduplicated)
+  const days = await extractMenuStructure(page, menuInfo.identifier)
 
-  // Create a map of item details by ID (will store enriched data)
-  const itemDetailsById = new Map<string, ModalDetails>()
+  // Build lookup of all items by ID for name resolution and later enrichment
+  const allItems = days.flatMap((day) => day.categories.flatMap((cat) => cat.items))
+  const itemById = new Map(allItems.filter((item) => item.id).map((item) => [item.id, item]))
+  const uniqueItemIds = [...itemById.keys()]
 
-  // Collect all unique item IDs to fetch details for
-  const uniqueItemIds = new Set<string>()
-  for (const day of uniqueDays) {
-    for (const category of day.categories) {
-      for (const item of category.items) {
-        if (item.id) {
-          uniqueItemIds.add(item.id)
-        }
-      }
-    }
-  }
-
-  console.log(`Found ${uniqueItemIds.size} unique items in ${menuInfo.name}`)
+  console.log(`Found ${uniqueItemIds.length} unique items in ${menuInfo.name}`)
 
   // Extract details for each unique item ID
-  for (const itemId of uniqueItemIds) {
-    // Find any item with this ID to get the name
-    let itemName = ''
-    for (const day of uniqueDays) {
-      for (const category of day.categories) {
-        const item = category.items.find((i) => i.id === itemId)
-        if (item) {
-          itemName = item.name
-          break
-        }
-      }
-      if (itemName) break
-    }
+  const itemDetailsById = new Map<string, ModalDetails>()
 
+  for (const itemId of uniqueItemIds) {
+    const itemName = itemById.get(itemId)?.name || ''
     console.log(`Extracting details: ${itemName} (${itemId})`)
 
     try {
@@ -279,35 +270,23 @@ async function processMenu(page: Page, menuInfo: MenuInfo): Promise<Menu> {
     }
   }
 
-  // Now enrich all items with their details
-  for (const day of uniqueDays) {
-    for (const category of day.categories) {
-      for (const item of category.items) {
-        if (item.id && itemDetailsById.has(item.id)) {
-          const details = itemDetailsById.get(item.id)!
-          item.ingredients = details.ingredients
-          item.allergens = details.allergens
-          item.nutritionPer100g = details.nutritionPer100g
-        }
-      }
+  // Enrich items with their details
+  for (const item of allItems) {
+    const details = item.id ? itemDetailsById.get(item.id) : undefined
+    if (details) {
+      item.ingredients = details.ingredients
+      item.allergens = details.allergens
+      item.nutritionPer100g = details.nutritionPer100g
     }
   }
 
-  const menuName = menuInfo.name.toLowerCase()
-  let menuType: 'breakfast' | 'lunch' | 'dinner'
-  if (menuName.includes('breakfast')) {
-    menuType = 'breakfast'
-  } else if (menuName.includes('dinner')) {
-    menuType = 'dinner'
-  } else {
-    menuType = 'lunch'
-  }
+  const menuType = getMenuType(menuInfo.name)
 
   return {
     identifier: menuInfo.identifier,
     name: menuInfo.name,
     type: menuType,
-    days: uniqueDays,
+    days,
   }
 }
 
@@ -362,7 +341,7 @@ export async function fetchLondonMenu(env: Cloudflare.Env): Promise<Menu[]> {
     // Process each menu
     const result: Menu[] = []
     for (const menuInfo of availableMenus) {
-      const menu = await processMenu(page, menuInfo)
+      const menu = await processMenu(page, menuInfo, env.LONDON_MENU_URL)
       result.push(menu)
     }
 
