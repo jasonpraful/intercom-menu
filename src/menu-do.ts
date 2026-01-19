@@ -12,15 +12,29 @@ export interface StoredMenuData {
 export interface MenuQueryResult {
   date: string
   day: string
-  mealType: 'breakfast' | 'lunch'
+  mealType: 'breakfast' | 'lunch' | 'dinner'
   menu: MenuCategory[]
 }
 
 export interface MenuItemWithContext extends MenuItem {
   date: string
   day: string
-  mealType: 'breakfast' | 'lunch'
+  mealType: 'breakfast' | 'lunch' | 'dinner'
   category: string
+}
+
+/**
+ * Extract the weekday name from a day string that may contain extra text.
+ * e.g., "Monday - Pie Day" → "Monday"
+ */
+function extractWeekday(dayString: string): string | null {
+  const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+  for (const day of weekdays) {
+    if (dayString.startsWith(day)) {
+      return day
+    }
+  }
+  return null
 }
 
 export class IntercomMenuDO extends DurableObject<Env, Record<string, unknown>> {
@@ -62,16 +76,25 @@ export class IntercomMenuDO extends DurableObject<Env, Record<string, unknown>> 
    * Generate a simple hash for menu comparison
    */
   private generateMenuHash(menus: Menu[]): string {
-    // Create a hash based on menu count, item count, and first/last item IDs
-    const summary = menus.map(menu => ({
-      type: menu.type,
-      dayCount: menu.days.length,
-      itemCount: menu.days.reduce((sum, day) =>
-        sum + day.categories.reduce((catSum, cat) =>
-          catSum + cat.items.length, 0), 0),
-      firstItemId: menu.days[0]?.categories[0]?.items[0]?.id || '',
-      lastDay: menu.days[menu.days.length - 1]?.day || ''
-    }))
+    const summary = menus.map((menu) => {
+      let itemCount = 0
+      for (const day of menu.days) {
+        for (const category of day.categories) {
+          itemCount += category.items.length
+        }
+      }
+
+      const firstDay = menu.days[0]
+      const lastDay = menu.days[menu.days.length - 1]
+
+      return {
+        type: menu.type,
+        dayCount: menu.days.length,
+        itemCount,
+        firstItemId: firstDay?.categories[0]?.items[0]?.id || '',
+        lastDay: lastDay?.day || '',
+      }
+    })
     return JSON.stringify(summary)
   }
 
@@ -107,8 +130,12 @@ export class IntercomMenuDO extends DurableObject<Env, Record<string, unknown>> 
       const mealType = menu.type
 
       for (const day of menu.days) {
-        const date = dateMap[day.day as keyof typeof dateMap]
-        if (!date) continue
+        const weekday = extractWeekday(day.day)
+        if (!weekday) {
+          console.warn(`Could not extract weekday from: "${day.day}"`)
+          continue
+        }
+        const date = dateMap[weekday as keyof typeof dateMap]
 
         let totalItems = 0
         const itemsToInsert: Array<{
@@ -138,7 +165,7 @@ export class IntercomMenuDO extends DurableObject<Env, Record<string, unknown>> 
           `INSERT OR REPLACE INTO menu_index (date, day_name, meal_type, categories_count, items_count)
            VALUES (?, ?, ?, ?, ?)`,
           date,
-          day.day,
+          weekday,
           mealType,
           day.categories.length,
           totalItems,
@@ -170,12 +197,16 @@ export class IntercomMenuDO extends DurableObject<Env, Record<string, unknown>> 
   /**
    * Get menu for a specific date and optional meal type
    */
-  async getMenuByDate(date: string, mealType?: 'breakfast' | 'lunch'): Promise<MenuQueryResult[]> {
-    // Check if date exists in index
-    const indexQuery = mealType ? `SELECT * FROM menu_index WHERE date = ? AND meal_type = ?` : `SELECT * FROM menu_index WHERE date = ?`
+  async getMenuByDate(date: string, mealType?: 'breakfast' | 'lunch' | 'dinner'): Promise<MenuQueryResult[]> {
+    let indexQuery = `SELECT * FROM menu_index WHERE date = ?`
+    const params: string[] = [date]
 
-    const cursor = mealType ? await this.sql.exec(indexQuery, date, mealType) : await this.sql.exec(indexQuery, date)
+    if (mealType) {
+      indexQuery += ` AND meal_type = ?`
+      params.push(mealType)
+    }
 
+    const cursor = await this.sql.exec(indexQuery, ...params)
     const indexRows = [...cursor]
 
     if (indexRows.length === 0) {
@@ -193,13 +224,16 @@ export class IntercomMenuDO extends DurableObject<Env, Record<string, unknown>> 
       const menu = storedData.menus.find((m) => m.type === row.meal_type)
 
       if (menu) {
-        const dayMenu = menu.days.find((d) => storedData.dateMap[d.day] === date)
+        const dayMenu = menu.days.find((d) => {
+          const weekday = extractWeekday(d.day)
+          return weekday && storedData.dateMap[weekday] === date
+        })
 
         if (dayMenu) {
           results.push({
             date: row.date as string,
             day: row.day_name as string,
-            mealType: row.meal_type as 'breakfast' | 'lunch',
+            mealType: row.meal_type as 'breakfast' | 'lunch' | 'dinner',
             menu: dayMenu.categories,
           })
         }
@@ -217,7 +251,7 @@ export class IntercomMenuDO extends DurableObject<Env, Record<string, unknown>> 
     options?: {
       startDate?: string
       endDate?: string
-      mealType?: 'breakfast' | 'lunch'
+      mealType?: 'breakfast' | 'lunch' | 'dinner'
       dietaryLabel?: string
     },
   ): Promise<MenuItemWithContext[]> {
@@ -266,7 +300,7 @@ export class IntercomMenuDO extends DurableObject<Env, Record<string, unknown>> 
     for (const row of rows) {
       const menu = storedData.menus.find((m) => m.type === row.meal_type)
       const date = row.date as string
-      const mealType = row.meal_type as 'breakfast' | 'lunch'
+      const mealType = row.meal_type as 'breakfast' | 'lunch' | 'dinner'
       const categoryName = row.category as string
 
       if (menu) {

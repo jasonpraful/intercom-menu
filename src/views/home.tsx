@@ -43,7 +43,7 @@ const endpoints: EndpointConfig[] = [
     params: [
       { name: 'location', type: 'path', defaultValue: 'london', placeholder: 'london, dublin, sf' },
       { name: 'date', type: 'path', defaultValue: new Date().toISOString().split('T')[0] },
-      { name: 'meal', type: 'query', placeholder: 'lunch | breakfast' },
+      { name: 'meal', type: 'query', placeholder: 'breakfast | lunch | dinner' },
     ],
   },
   {
@@ -56,7 +56,7 @@ const endpoints: EndpointConfig[] = [
       { name: 'q', type: 'query', placeholder: 'Search term (e.g. vegan)' },
       { name: 'startDate', type: 'query', placeholder: 'YYYY-MM-DD' },
       { name: 'endDate', type: 'query', placeholder: 'YYYY-MM-DD' },
-      { name: 'meal', type: 'query', placeholder: 'lunch | breakfast' },
+      { name: 'meal', type: 'query', placeholder: 'breakfast | lunch | dinner' },
       { name: 'dietary', type: 'query', placeholder: 'Dietary label' },
     ],
   },
@@ -158,9 +158,12 @@ function EndpointTester(props: EndpointConfig) {
             {props.params.length === 0 && <p class="text-gray-500 italic font-bold text-center py-4">No parameters required.</p>}
 
             {props.params.map((param) => {
-              let badgeColor = 'bg-blue-500'
-              if (param.type === 'path') badgeColor = 'bg-red-500'
-              if (param.type === 'header') badgeColor = 'bg-orange-500'
+              const badgeColorMap: Record<ParamConfig['type'], string> = {
+                path: 'bg-red-500',
+                query: 'bg-blue-500',
+                header: 'bg-orange-500',
+              }
+              const badgeColor = badgeColorMap[param.type]
 
               return (
                 <div class="flex flex-col gap-1">

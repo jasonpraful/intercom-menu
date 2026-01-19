@@ -5,7 +5,7 @@ import { getWeekRange, getCurrentWeekRange, formatDate } from './helpers/date-ut
 
 // Shared schema definitions
 const LOCATION_SCHEMA = z.enum(['london', 'dublin', 'sf'])
-const MEAL_TYPE_SCHEMA = z.enum(['breakfast', 'lunch'])
+const MEAL_TYPE_SCHEMA = z.enum(['breakfast', 'lunch', 'dinner'])
 const DIETARY_LABEL_SCHEMA = z.enum(['Vegan', 'Vegetarian', 'Gluten-Free', 'Dairy-Free'])
 
 export class IntercomMenuMCP extends McpAgent<Env, Record<string, never>, {}> {
@@ -151,7 +151,7 @@ export class IntercomMenuMCP extends McpAgent<Env, Record<string, never>, {}> {
           weekStartDate: z.string().optional().describe('Monday date in YYYY-MM-DD format (defaults to current week)'),
         }),
         description:
-          'Get complete week menu data for a location. Returns full menu structure with breakfast and lunch for Monday-Friday, including stored timestamp and all item details.',
+          'Get complete week menu data for a location. Returns full menu structure with breakfast, lunch, and dinner for Monday-Friday, including stored timestamp and all item details.',
       },
       async ({ location, weekStartDate }) => {
         try {

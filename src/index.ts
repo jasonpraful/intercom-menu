@@ -30,7 +30,7 @@ const requireApiKey = async (c: Context<{ Bindings: Cloudflare.Env }>, next: Nex
   await next()
 }
 
-const validateLocation = (location: string): location is Location => {
+function validateLocation(location: string): location is Location {
   return ALLOWED_LOCATIONS.includes(location.toLowerCase() as Location)
 }
 
@@ -54,7 +54,6 @@ app.notFound((c) => {
  */
 app.get('/workflow', requireApiKey, async (c) => {
   const workflow = await c.env.FETCH_MENU_WORKFLOW.create()
-  c.status(200)
   return c.json(workflow)
 })
 
@@ -67,34 +66,32 @@ app.get('/workflow/:id', async (c) => {
   try {
     const workflow = await c.env.FETCH_MENU_WORKFLOW.get(id)
     const status = await workflow.status()
-    c.status(200)
     return c.json(status)
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     const errorObj = error as { remote?: boolean }
 
     if (errorMessage.includes('not_found') || errorObj.remote === true) {
-      c.status(404)
-      return c.json({ error: 'Workflow not found', id })
+      return c.json({ error: 'Workflow not found', id }, 404)
     }
-    c.status(500)
-    return c.json({ error: 'Error fetching workflow status' })
+    return c.json({ error: 'Error fetching workflow status' }, 500)
   }
 })
 
 // DO - Menu Endpoints
 
-app.get('/menu', async (c) => {
-  c.status(400)
-  c.header('Content-Type', 'application/json')
-  return c.json({
-    error: 'Menu durable object name is required',
-    examples: {
-      directAccess: '/menu/london-2025-11-24-2025-11-28',
-      queryByDate: '/menu/query/london/2025-11-25?meal=lunch',
-      search: '/menu/search/london?q=vegan&dietary=Vegan',
+app.get('/menu', (c) => {
+  return c.json(
+    {
+      error: 'Menu durable object name is required',
+      examples: {
+        directAccess: '/menu/london-2025-11-24-2025-11-28',
+        queryByDate: '/menu/query/london/2025-11-25?meal=lunch',
+        search: '/menu/search/london?q=vegan&dietary=Vegan',
+      },
     },
-  })
+    400,
+  )
 })
 
 /*
@@ -105,34 +102,25 @@ app.get('/menu', async (c) => {
 app.get('/menu/query/:location/:date', async (c) => {
   const location = c.req.param('location').toLowerCase()
   const date = c.req.param('date')
-  const { meal } = c.req.query() as { meal?: 'breakfast' | 'lunch' }
+  const { meal } = c.req.query() as { meal?: 'breakfast' | 'lunch' | 'dinner' }
 
   if (!validateLocation(location)) {
-    c.status(400)
-    return c.json({
-      error: 'Invalid location',
-      validLocations: ALLOWED_LOCATIONS,
-    })
+    return c.json({ error: 'Invalid location', validLocations: ALLOWED_LOCATIONS }, 400)
   }
-  if (meal && meal !== 'breakfast' && meal !== 'lunch') {
-    c.status(400)
-    c.header('Content-Type', 'application/json')
-    return c.json({
-      error: 'Invalid meal type',
-      validMealTypes: ['breakfast', 'lunch'],
-    })
+
+  if (meal && meal !== 'breakfast' && meal !== 'lunch' && meal !== 'dinner') {
+    return c.json({ error: 'Invalid meal type', validMealTypes: ['breakfast', 'lunch', 'dinner'] }, 400)
   }
+
   const weekRange = getWeekRange(date)
   const id = c.env.INTERCOM_MENU.idFromName(weekRange.weekKey.replace('london', location))
   const stub = c.env.INTERCOM_MENU.get(id)
   const results = await stub.getMenuByDate(date, meal)
 
   if (!results || results.length === 0) {
-    c.status(404)
-    return c.json({ error: 'No results found' })
+    return c.json({ error: 'No results found' }, 404)
   }
 
-  c.status(200)
   return c.json(results)
 })
 
@@ -148,22 +136,24 @@ app.get('/menu/search/:location', async (c) => {
   const location = c.req.param('location').toLowerCase()
 
   if (!validateLocation(location)) {
-    c.status(400)
-    return c.json({
-      error: 'Invalid location',
-      validLocations: ALLOWED_LOCATIONS,
-      usage: '/menu/search/london?q=vegan&startDate=2025-11-24&endDate=2025-11-28',
-    })
+    return c.json(
+      {
+        error: 'Invalid location',
+        validLocations: ALLOWED_LOCATIONS,
+        usage: '/menu/search/london?q=vegan&startDate=2025-11-24&endDate=2025-11-28',
+      },
+      400,
+    )
   }
 
   try {
     const query = c.req.query('q') || ''
     let startDate = c.req.query('startDate')
     let endDate = c.req.query('endDate')
-    const mealType = c.req.query('meal') as 'breakfast' | 'lunch' | undefined
+    const mealType = c.req.query('meal') as 'breakfast' | 'lunch' | 'dinner' | undefined
     const dietaryLabel = c.req.query('dietary') || undefined
 
-    const dateToQuery = startDate || formatDate(new Date()) // Use current date as default
+    const dateToQuery = startDate || formatDate(new Date())
     const weekRange = getWeekRange(dateToQuery)
     const id = c.env.INTERCOM_MENU.idFromName(weekRange.weekKey.replace('london', location))
     const stub = c.env.INTERCOM_MENU.get(id)
@@ -185,16 +175,13 @@ app.get('/menu/search/:location', async (c) => {
     })
 
     if (!items || items.length === 0) {
-      c.status(404)
-      return c.json({ error: 'No items found' })
+      return c.json({ error: 'No items found' }, 404)
     }
 
-    c.status(200)
     return c.json({ items, count: items.length })
   } catch (error) {
     console.error('Error searching menu:', error)
-    c.status(500)
-    return c.json({ error: 'Error searching menu' })
+    return c.json({ error: 'Error searching menu' }, 500)
   }
 })
 
@@ -210,16 +197,15 @@ app.get('/menu/:name', async (c) => {
     const id = c.env.INTERCOM_MENU.idFromName(name)
     const stub = c.env.INTERCOM_MENU.get(id)
     const data = await stub.getStoredData()
+
     if (!data) {
-      c.status(404)
-      return c.json({ error: 'Menu not found' })
+      return c.json({ error: 'Menu not found' }, 404)
     }
-    c.status(200)
+
     return c.json(data)
   } catch (error) {
     console.error('Error getting menu:', error)
-    c.status(500)
-    return c.json({ error: 'Error getting menu' })
+    return c.json({ error: 'Error getting menu' }, 500)
   }
 })
 

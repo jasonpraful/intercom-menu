@@ -77,45 +77,32 @@ async function extractModalDetails(page: Page, recipeId: string): Promise<ModalD
     const modal = document.querySelector(`.k10-recipe-modal[data-recipe-id="${id}"]`)
     if (!modal) return null
 
-    // Extract ingredients
     const ingredientEl = modal.querySelector('.k10-w-recipe__ingredient')
     const ingredients = ingredientEl?.textContent?.trim() || ''
 
-    // Extract allergens
-    const allergens: ModalDetails['allergens'] = {}
-
-    const suitableEl = modal.querySelector('.k10-recipe-modal__allergens_suitable .k10-recipe-modal__allergens_value')
-    if (suitableEl) {
-      const text = suitableEl.textContent?.trim() || ''
-      if (text) {
-        allergens.suitableFor = text
-          .split(',')
-          .map((s: string) => s.trim())
-          .filter((s: string) => s.length > 0)
-      }
+    function parseAllergenField(selector: string): string[] | undefined {
+      const element = modal!.querySelector(selector)
+      if (!element) return undefined
+      const text = element.textContent?.trim() || ''
+      if (!text) return undefined
+      return text
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter((s: string) => s.length > 0)
     }
 
-    const containsEl = modal.querySelector('.k10-recipe-modal__allergens_contains .k10-recipe-modal__allergens_value')
-    if (containsEl) {
-      const text = containsEl.textContent?.trim() || ''
-      if (text) {
-        allergens.contains = text
-          .split(',')
-          .map((s: string) => s.trim())
-          .filter((s: string) => s.length > 0)
-      }
-    }
+    const suitableFor = parseAllergenField('.k10-recipe-modal__allergens_suitable .k10-recipe-modal__allergens_value')
+    const contains = parseAllergenField('.k10-recipe-modal__allergens_contains .k10-recipe-modal__allergens_value')
+    const mayContain = parseAllergenField('.k10-recipe-modal__allergens_may .k10-recipe-modal__allergens_value')
 
-    const mayContainEl = modal.querySelector('.k10-recipe-modal__allergens_may .k10-recipe-modal__allergens_value')
-    if (mayContainEl) {
-      const text = mayContainEl.textContent?.trim() || ''
-      if (text) {
-        allergens.mayContain = text
-          .split(',')
-          .map((s: string) => s.trim())
-          .filter((s: string) => s.length > 0)
-      }
-    }
+    const hasAllergens = suitableFor || contains || mayContain
+    const allergens = hasAllergens
+      ? {
+          ...(suitableFor && { suitableFor }),
+          ...(contains && { contains }),
+          ...(mayContain && { mayContain }),
+        }
+      : undefined
 
     // Extract nutrition (per 100g)
     const nutritionPer100g: ModalDetails['nutritionPer100g'] = {}
@@ -156,10 +143,12 @@ async function extractModalDetails(page: Page, recipeId: string): Promise<ModalD
       }
     })
 
+    const hasNutrition = Object.keys(nutritionPer100g).length > 0
+
     return {
       ingredients,
-      allergens: Object.keys(allergens).length > 0 ? allergens : undefined,
-      nutritionPer100g: Object.keys(nutritionPer100g).length > 0 ? nutritionPer100g : undefined,
+      allergens,
+      nutritionPer100g: hasNutrition ? nutritionPer100g : undefined,
     }
   }, recipeId)
 }
@@ -304,7 +293,15 @@ async function processMenu(page: Page, menuInfo: MenuInfo): Promise<Menu> {
     }
   }
 
-  const menuType = menuInfo.name.toLowerCase().includes('breakfast') ? 'breakfast' : 'lunch'
+  const menuName = menuInfo.name.toLowerCase()
+  let menuType: 'breakfast' | 'lunch' | 'dinner'
+  if (menuName.includes('breakfast')) {
+    menuType = 'breakfast'
+  } else if (menuName.includes('dinner')) {
+    menuType = 'dinner'
+  } else {
+    menuType = 'lunch'
+  }
 
   return {
     identifier: menuInfo.identifier,

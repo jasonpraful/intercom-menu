@@ -1,22 +1,26 @@
+export interface Allergens {
+  suitableFor?: string[]
+  contains?: string[]
+  mayContain?: string[]
+}
+
+export interface NutritionPer100g {
+  energyKcal?: number
+  proteinG?: number
+  carbG?: number
+  sugarsG?: number
+  fatG?: number
+  satFatG?: number
+  saltG?: number
+}
+
 export interface MenuItem {
   id: string
   name: string
   dietaryLabels: string[]
   ingredients?: string
-  allergens?: {
-    suitableFor?: string[]
-    contains?: string[]
-    mayContain?: string[]
-  }
-  nutritionPer100g?: {
-    energyKcal?: number
-    proteinG?: number
-    carbG?: number
-    sugarsG?: number
-    fatG?: number
-    satFatG?: number
-    saltG?: number
-  }
+  allergens?: Allergens
+  nutritionPer100g?: NutritionPer100g
 }
 
 export interface MenuCategory {
@@ -32,7 +36,7 @@ export interface DayMenu {
 export interface Menu {
   identifier: string
   name: string
-  type: 'breakfast' | 'lunch'
+  type: 'breakfast' | 'lunch' | 'dinner'
   days: DayMenu[]
 }
 
@@ -43,18 +47,6 @@ export interface MenuInfo {
 
 export interface ModalDetails {
   ingredients: string
-  allergens?: {
-    suitableFor?: string[]
-    contains?: string[]
-    mayContain?: string[]
-  }
-  nutritionPer100g?: {
-    energyKcal?: number
-    proteinG?: number
-    carbG?: number
-    sugarsG?: number
-    fatG?: number
-    satFatG?: number
-    saltG?: number
-  }
+  allergens?: Allergens
+  nutritionPer100g?: NutritionPer100g
 }
