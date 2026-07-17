@@ -58,11 +58,11 @@ export class IntercomMenuMCP extends McpAgent<Env, Record<string, never>, {}> {
     this.server.registerTool(
       'query-menu-by-date',
       {
-        inputSchema: z.object({
+        inputSchema: {
           location: LOCATION_SCHEMA.describe('Location to query'),
           date: z.string().optional().describe('Date in YYYY-MM-DD format (defaults to today)'),
           mealType: MEAL_TYPE_SCHEMA.optional().describe('Meal type to filter by'),
-        }),
+        },
         description:
           'Get menu for a specific date and location. Returns menu categories with all items including full nutrition and allergen details.',
       },
@@ -88,14 +88,14 @@ export class IntercomMenuMCP extends McpAgent<Env, Record<string, never>, {}> {
     this.server.registerTool(
       'search-menu-items',
       {
-        inputSchema: z.object({
+        inputSchema: {
           location: LOCATION_SCHEMA.describe('Location to search'),
           query: z.string().optional().describe('Search term for item names'),
           startDate: z.string().optional().describe('Start date in YYYY-MM-DD format (defaults to current week Monday)'),
           endDate: z.string().optional().describe('End date in YYYY-MM-DD format (defaults to current week Friday)'),
           mealType: MEAL_TYPE_SCHEMA.optional().describe('Filter by meal type'),
           dietaryLabel: z.string().optional().describe('Filter by dietary label (e.g., "Vegan", "Gluten-Free")'),
-        }),
+        },
         description:
           'Search menu items with flexible filters. Returns items with full details including nutrition, allergens, and ingredients. Great for finding specific items or filtering by dietary requirements.',
       },
@@ -146,10 +146,10 @@ export class IntercomMenuMCP extends McpAgent<Env, Record<string, never>, {}> {
     this.server.registerTool(
       'get-week-menu',
       {
-        inputSchema: z.object({
+        inputSchema: {
           location: LOCATION_SCHEMA.describe('Location to get menu for'),
           weekStartDate: z.string().optional().describe('Monday date in YYYY-MM-DD format (defaults to current week)'),
-        }),
+        },
         description:
           'Get complete week menu data for a location. Returns full menu structure with breakfast, lunch, and dinner for Monday-Friday, including stored timestamp and all item details.',
       },
@@ -175,12 +175,12 @@ export class IntercomMenuMCP extends McpAgent<Env, Record<string, never>, {}> {
     this.server.registerTool(
       'find-items-by-dietary-label',
       {
-        inputSchema: z.object({
+        inputSchema: {
           location: LOCATION_SCHEMA.describe('Location to search'),
           dietaryLabel: DIETARY_LABEL_SCHEMA.describe('Dietary label to filter by'),
           mealType: MEAL_TYPE_SCHEMA.optional().describe('Filter by meal type'),
           date: z.string().optional().describe('Date in YYYY-MM-DD format (defaults to today)'),
-        }),
+        },
         description:
           'Quick filter for specific dietary requirements. Returns all items matching the dietary label with full nutrition and allergen information.',
       },
