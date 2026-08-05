@@ -299,7 +299,7 @@ export async function fetchLondonMenu(env: Cloudflare.Env): Promise<Menu[]> {
     throw new Error('LONDON_MENU_URL is not set')
   }
 
-  const browser = await puppeteer.launch(env.BROWSER, { location: 'GB' })
+  const browser = await puppeteer.launch(env.BROWSER)
 
   try {
     const page = await browser.newPage()
