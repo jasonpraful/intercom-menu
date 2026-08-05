@@ -294,6 +294,20 @@ claude mcp add --transport http intercom-menu http://localhost:8788/mcp
 - Verify API_KEY is set correctly
 - Ensure date is within Monday-Friday range
 
+### Workflow Fails at `PuppeteerWorkers.acquire`
+
+The fetch could not get a browser from Browser Run (formerly Browser Rendering). This is the
+first Browser Run call, before any page work. The logged message includes the HTTP status the
+acquire returned:
+
+- `429` - rate or usage limit hit. See [Browser Run limits](https://developers.cloudflare.com/browser-run/limits/).
+- Anything else - usually no capacity for the requested location (`fetchLondonMenu` asks for
+  `location: 'GB'`).
+
+The `fetch-london-menu` step retries with exponential backoff, so a transient failure should
+recover on its own. Check `puppeteer.limits(env.BROWSER)` or the Browser Run dashboard if it
+does not.
+
 ### TypeScript Errors
 
 - Run `bun run type-check` to identify issues
